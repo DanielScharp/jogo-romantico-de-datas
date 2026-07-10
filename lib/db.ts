@@ -10,6 +10,7 @@ export interface Progress {
   unlockedLetters: Record<number, string>
   submittedAnswers: Record<number, string>
   attachedImages: Record<number, string>
+  finalPhraseCompleted: boolean
 }
 
 export interface StoredGameData {
@@ -24,6 +25,7 @@ export const defaultProgress: Progress = {
   unlockedLetters: {},
   submittedAnswers: {},
   attachedImages: {},
+  finalPhraseCompleted: false,
 }
 
 function buildDefaultStore(): StoredGameData {

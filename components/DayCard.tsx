@@ -108,12 +108,9 @@ export default function DayCard({ dayData, isUnlocked, isCompleted, submittedAns
           <AudioPlayer src={dayData.audioUrl} dayNumber={dayData.day} />
 
           {/* Photo challenge */}
-          <div className="rounded-2xl bg-[var(--color-secondary)] border border-[var(--color-border)]/60 px-4 py-3 space-y-1.5">
+          <div className="rounded-2xl bg-[var(--color-secondary)] border border-[var(--color-border)]/60 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--color-primary-dark)] flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M20 5h-3.17L15 3H9L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-              </svg>
-              Desafio Fotográfico
+              Desafio
             </p>
             <p className="text-sm text-[var(--color-foreground)] leading-relaxed">
               {dayData.challenge}

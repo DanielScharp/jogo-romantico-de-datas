@@ -5,6 +5,7 @@ export interface GameProgress {
   unlockedLetters: Record<number, string>
   submittedAnswers: Record<number, string>
   attachedImages: Record<number, string>
+  finalPhraseCompleted: boolean
 }
 
 export const defaultProgress: GameProgress = {
@@ -12,6 +13,7 @@ export const defaultProgress: GameProgress = {
   unlockedLetters: {},
   submittedAnswers: {},
   attachedImages: {},
+  finalPhraseCompleted: false,
 }
 
 interface GameStoreResponse {
@@ -31,6 +33,9 @@ function normalizeProgress(progress?: Partial<GameProgress> | null): GameProgres
     attachedImages: progress?.attachedImages && typeof progress.attachedImages === 'object'
       ? progress.attachedImages
       : defaultProgress.attachedImages,
+    finalPhraseCompleted: typeof progress?.finalPhraseCompleted === 'boolean'
+      ? progress.finalPhraseCompleted
+      : defaultProgress.finalPhraseCompleted,
   }
 }
 

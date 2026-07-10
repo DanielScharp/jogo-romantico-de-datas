@@ -5,10 +5,12 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 interface LetterBoardProps {
   unlockedLetters: Record<number, string>  // position(canonical) → letter
   lastDayCompleted: boolean
+  finalPhraseCompleted: boolean
   phraseMap: Record<number, string>        // position → correct letter (only admin knows this)
   bonusPositions: number[]
   finalPhraseDisplay: string
   totalLetters: number
+  onFinalPhraseSolved?: () => void
 }
 
 // A chip in the bank — identified by an opaque id (the canonical position)
@@ -27,10 +29,12 @@ interface CellPlacement {
 export default function LetterBoard({
   unlockedLetters,
   lastDayCompleted,
+  finalPhraseCompleted,
   phraseMap,
   bonusPositions,
   finalPhraseDisplay,
   totalLetters,
+  onFinalPhraseSolved,
 }: LetterBoardProps) {
   // Merge bonus letters (last day reward) into available set
   const allUnlocked: Record<number, string> = { ...unlockedLetters }
@@ -50,6 +54,7 @@ export default function LetterBoard({
   // wrong animation: shake the whole board
   const [shaking, setShaking] = useState(false)
 
+  const isSolved = finalPhraseCompleted || validated === 'correct'
   const totalUnlocked = Object.keys(allUnlocked).length
 
   // All available chips, sorted by letter for a tidy display
@@ -85,6 +90,24 @@ export default function LetterBoard({
     return groups
   })()
 
+  useEffect(() => {
+    if (!finalPhraseCompleted || Object.keys(board).length > 0) return
+
+    const restoredBoard = Object.fromEntries(
+      Array.from({ length: boardSlots }, (_, index) => {
+        const slot = index + 1
+        const letter = phraseMap[slot]
+        if (!letter) return null
+        return [slot, { chipId: slot, letter }]
+      }).filter(Boolean) as Array<[number, CellPlacement]>
+    )
+
+    if (Object.keys(restoredBoard).length > 0) {
+      setBoard(restoredBoard)
+      setValidated('correct')
+    }
+  }, [board, boardSlots, finalPhraseCompleted, phraseMap])
+
   // ── Validation ────────────────────────────────────────────────────────────────
   // The correct sequence is simply the phrase itself, positionally.
   // phraseMap[pos] gives the correct letter at phrase position `pos`.
@@ -99,6 +122,7 @@ export default function LetterBoard({
     })
     if (isCorrect) {
       setValidated('correct')
+      onFinalPhraseSolved?.()
     } else {
       setValidated('wrong')
       setShaking(true)
@@ -111,6 +135,8 @@ export default function LetterBoard({
 
   // ── Place / remove helpers ────────────────────────────────────────────────────
   const placeChip = useCallback((chipId: number, letter: string, cellSlot: number) => {
+    if (isSolved) return
+
     setValidated('idle')
     setBoard((prev) => {
       const next = { ...prev }
@@ -121,6 +147,8 @@ export default function LetterBoard({
   }, [])
 
   const removeFromCell = useCallback((cellSlot: number) => {
+    if (isSolved) return
+
     setValidated('idle')
     setBoard((prev) => {
       const next = { ...prev }
@@ -142,6 +170,8 @@ export default function LetterBoard({
   }
   const onCellDragLeave = () => setHoveredCell(null)
   const onCellDrop = (e: React.DragEvent, slot: number) => {
+    if (isSolved) return
+
     e.preventDefault()
     setHoveredCell(null)
     if (dragging === null) return
@@ -239,7 +269,7 @@ export default function LetterBoard({
   const getCellState = (slot: number) => {
     const placed = board[slot]
     const isHovered = hoveredCell === slot
-    if (validated === 'correct') return 'correct'
+    if (isSolved) return 'correct'
     if (placed) return isHovered ? 'filled-hovered' : 'filled'
     if (isHovered && dragging !== null) return 'hovered'
     return slot > totalUnlocked ? 'locked' : 'empty'
@@ -291,13 +321,13 @@ export default function LetterBoard({
                 >
                   <div
                     aria-label={placed ? `Posição ${slot}: letra ${placed.letter}` : `Posição ${slot} vazia`}
-                    draggable={!!placed && validated !== 'correct'}
+                    draggable={!!placed && !isSolved}
                     onDragStart={placed ? (e) => onBoardChipDragStart(e, slot) : undefined}
                     onDragEnd={onChipDragEnd}
-                    onTouchStart={placed && validated !== 'correct' ? (e) => onBoardTouchStart(e, slot) : undefined}
+                    onTouchStart={placed && !isSolved ? (e) => onBoardTouchStart(e, slot) : undefined}
                     onTouchMove={placed ? onTouchMove : undefined}
                     onTouchEnd={placed ? onTouchEnd : undefined}
-                    onClick={() => placed && validated !== 'correct' && removeFromCell(slot)}
+                    onClick={() => placed && !isSolved && removeFromCell(slot)}
                     className={[
                       'w-9 h-10 rounded-xl flex items-center justify-center',
                       'text-base font-bold font-display select-none transition-all duration-200',
@@ -333,8 +363,14 @@ export default function LetterBoard({
         </p>
       )}
 
+      {isSolved && (
+        <p className="text-center text-sm font-medium text-[var(--color-success)] animate-slide-up">
+          Mensagem revelada com sucesso! Ela já ficou salva para você.
+        </p>
+      )}
+
       {/* Validate button — only when all slots filled */}
-      {allFilled && validated !== 'correct' && (
+      {allFilled && !isSolved && (
         <button
           onClick={handleValidate}
           className="w-full rounded-xl py-3 bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-95 animate-slide-up animate-glow"

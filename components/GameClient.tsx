@@ -67,6 +67,21 @@ export default function GameClient() {
     })
   }, [])
 
+  const handleFinalPhraseSolved = useCallback(() => {
+    setProgress((prev) => {
+      if (prev.finalPhraseCompleted) {
+        return prev
+      }
+
+      const next: GameProgress = {
+        ...prev,
+        finalPhraseCompleted: true,
+      }
+      void saveProgress(next).catch(() => undefined)
+      return next
+    })
+  }, [])
+
   if (!hydrated || !config) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
@@ -170,10 +185,12 @@ export default function GameClient() {
             <LetterBoard
               unlockedLetters={progress.unlockedLetters}
               lastDayCompleted={lastDayCompleted}
+              finalPhraseCompleted={progress.finalPhraseCompleted}
               phraseMap={config.phraseMap}
               bonusPositions={config.bonusPositions}
               finalPhraseDisplay={config.finalPhraseDisplay}
               totalLetters={Object.keys(config.phraseMap).length}
+              onFinalPhraseSolved={handleFinalPhraseSolved}
             />
           </div>
         )}
