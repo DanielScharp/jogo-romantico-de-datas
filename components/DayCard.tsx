@@ -12,10 +12,10 @@ interface DayCardProps {
   submittedAnswer?: string
   attachmentUrl?: string
   onAttachmentUploaded?: (dayNumber: number, attachmentUrl: string) => void
-  onComplete: (dayNumber: number, letter: string, position: number, submittedAnswer: string) => void
+  onSubmitAnswer: (dayNumber: number, letter: string, position: number, submittedAnswer: string, isCorrect: boolean) => void
 }
 
-export default function DayCard({ dayData, isUnlocked, isCompleted, submittedAnswer, attachmentUrl, onAttachmentUploaded, onComplete }: DayCardProps) {
+export default function DayCard({ dayData, isUnlocked, isCompleted, submittedAnswer, attachmentUrl, onAttachmentUploaded, onSubmitAnswer }: DayCardProps) {
   const [expanded, setExpanded] = useState(false)
 
   const handleToggle = () => {
@@ -124,7 +124,7 @@ export default function DayCard({ dayData, isUnlocked, isCompleted, submittedAns
             submittedAnswer={submittedAnswer}
             attachmentUrl={attachmentUrl}
             onAttachmentUploaded={onAttachmentUploaded}
-            onComplete={onComplete}
+            onSubmitAnswer={onSubmitAnswer}
           />
         </div>
       )}

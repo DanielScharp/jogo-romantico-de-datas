@@ -31,26 +31,49 @@ export default function GameClient() {
     }
   }, [])
 
-  const handleDayComplete = useCallback(
-    (dayNumber: number, letter: string, position: number, submittedAnswer: string) => {
+  const handleSubmitAnswer = useCallback(
+    (dayNumber: number, letter: string, position: number, submittedAnswer: string, isCorrect: boolean) => {
       setProgress((prev) => {
-        if (prev.completedDays.includes(dayNumber)) {
-          const next: GameProgress = {
-            ...prev,
-            submittedAnswers: { ...prev.submittedAnswers, [dayNumber]: submittedAnswer },
-          }
+        const nextAttempts = [
+          ...(prev.answerAttempts[dayNumber] ?? []),
+          {
+            answer: submittedAnswer,
+            isCorrect,
+            submittedAt: new Date().toISOString(),
+          },
+        ]
+
+        const next: GameProgress = {
+          ...prev,
+          answerAttempts: {
+            ...prev.answerAttempts,
+            [dayNumber]: nextAttempts,
+          },
+        }
+
+        if (!isCorrect) {
           void saveProgress(next).catch(() => undefined)
           return next
         }
 
-        const next: GameProgress = {
+        if (prev.completedDays.includes(dayNumber)) {
+          const updated: GameProgress = {
+            ...next,
+            submittedAnswers: { ...prev.submittedAnswers, [dayNumber]: submittedAnswer },
+          }
+          void saveProgress(updated).catch(() => undefined)
+          return updated
+        }
+
+        const completed: GameProgress = {
+          ...next,
           completedDays: [...prev.completedDays, dayNumber],
           unlockedLetters: { ...prev.unlockedLetters, [position]: letter },
           submittedAnswers: { ...prev.submittedAnswers, [dayNumber]: submittedAnswer },
           attachedImages: prev.attachedImages,
         }
-        void saveProgress(next).catch(() => undefined)
-        return next
+        void saveProgress(completed).catch(() => undefined)
+        return completed
       })
     },
     []
@@ -176,7 +199,7 @@ export default function GameClient() {
                 submittedAnswer={progress.submittedAnswers[day.day]}
                 attachmentUrl={progress.attachedImages[day.day]}
                 onAttachmentUploaded={handleAttachmentUploaded}
-                onComplete={handleDayComplete}
+                onSubmitAnswer={handleSubmitAnswer}
               />
             ))}
           </div>

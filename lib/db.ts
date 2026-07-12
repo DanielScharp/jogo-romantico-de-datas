@@ -5,11 +5,18 @@ import {
   type AdminConfig,
 } from './adminConfig'
 
+export interface AnswerAttempt {
+  answer: string
+  isCorrect: boolean
+  submittedAt: string
+}
+
 export interface Progress {
   completedDays: number[]
   unlockedLetters: Record<number, string>
   submittedAnswers: Record<number, string>
   attachedImages: Record<number, string>
+  answerAttempts: Record<number, AnswerAttempt[]>
   finalPhraseCompleted: boolean
 }
 
@@ -25,6 +32,7 @@ export const defaultProgress: Progress = {
   unlockedLetters: {},
   submittedAnswers: {},
   attachedImages: {},
+  answerAttempts: {},
   finalPhraseCompleted: false,
 }
 

@@ -9,7 +9,7 @@ interface ChallengeFormProps {
   submittedAnswer?: string
   attachmentUrl?: string
   onAttachmentUploaded?: (dayNumber: number, attachmentUrl: string) => void
-  onComplete: (dayNumber: number, letter: string, position: number, submittedAnswer: string) => void
+  onSubmitAnswer: (dayNumber: number, letter: string, position: number, submittedAnswer: string, isCorrect: boolean) => void
 }
 
 // Normaliza string: remove acentos e converte para minúsculas
@@ -21,7 +21,7 @@ function normalize(str: string): string {
     .trim()
 }
 
-export default function ChallengeForm({ dayData, alreadyCompleted, submittedAnswer = '', attachmentUrl = '', onAttachmentUploaded, onComplete }: ChallengeFormProps) {
+export default function ChallengeForm({ dayData, alreadyCompleted, submittedAnswer = '', attachmentUrl = '', onAttachmentUploaded, onSubmitAnswer }: ChallengeFormProps) {
   const [value, setValue] = useState('')
   const [status, setStatus] = useState<'idle' | 'error' | 'success'>(
     alreadyCompleted ? 'success' : 'idle'
@@ -79,15 +79,16 @@ export default function ChallengeForm({ dayData, alreadyCompleted, submittedAnsw
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!value.trim()) return
+    const trimmedValue = value.trim()
+    if (!trimmedValue) return
 
-    const isCorrect = normalize(value) === normalize(dayData.answer)
+    const isCorrect = normalize(trimmedValue) === normalize(dayData.answer)
+    onSubmitAnswer(dayData.day, dayData.letter, dayData.position, trimmedValue, isCorrect)
 
     if (isCorrect) {
-      setSubmittedAnswerState(value.trim())
+      setSubmittedAnswerState(trimmedValue)
       setStatus('success')
       setConfetti(true)
-      onComplete(dayData.day, dayData.letter, dayData.position, value.trim())
       setTimeout(() => setConfetti(false), 2000)
     } else {
       if (errorTimerRef.current) clearTimeout(errorTimerRef.current)

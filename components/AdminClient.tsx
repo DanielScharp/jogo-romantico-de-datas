@@ -16,6 +16,7 @@ import {
   type AdminConfig,
   type AdminDayConfig,
 } from '@/lib/adminConfig'
+import { loadProgress, type GameProgress, type AnswerAttempt } from '@/lib/gameStore'
 
 // ── Tipos locais ──────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ function unlockDateFor(startIso: string, dayNumber: number): string {
 
 export default function AdminClient() {
   const [config, setConfig] = useState<AdminConfig | null>(null)
+  const [progress, setProgress] = useState<GameProgress | null>(null)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
   const [openDay, setOpenDay] = useState<number | null>(1)
   const [hydrated, setHydrated] = useState(false)
@@ -43,9 +45,10 @@ export default function AdminClient() {
   useEffect(() => {
     let cancelled = false
 
-    void loadAdminConfig().then((saved) => {
+    void Promise.all([loadAdminConfig(), loadProgress()]).then(([savedConfig, savedProgress]) => {
       if (!cancelled) {
-        setConfig(saved ?? buildInitialAdminConfig())
+        setConfig(savedConfig ?? buildInitialAdminConfig())
+        setProgress(savedProgress)
         setHydrated(true)
       }
     })
@@ -430,6 +433,7 @@ export default function AdminClient() {
               onTestAudio={(url) => handleTestAudio(day.day, url)}
               onAudioUpload={(file) => handleAudioUpload(day.day, file)}
               onAttachmentUpload={(file) => handleAttachmentUpload(day.day, file)}
+              attempts={progress?.answerAttempts[day.day] ?? []}
             />
           ))}
         </section>
@@ -529,6 +533,15 @@ function LetterDistributionPreview({
   )
 }
 
+function formatAttemptTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+}
+
 function DayAccordion({
   day,
   startDate,
@@ -541,6 +554,7 @@ function DayAccordion({
   onTestAudio,
   onAudioUpload,
   onAttachmentUpload,
+  attempts,
 }: {
   day: AdminDayConfig
   startDate: string
@@ -553,6 +567,7 @@ function DayAccordion({
   onTestAudio: (url: string) => void
   onAudioUpload: (file: File) => void
   onAttachmentUpload: (file: File) => void
+  attempts: AnswerAttempt[]
 }) {
   const position = distribution?.dayToPosition[day.day]
   const letter = position ? distribution?.phraseMap[position] : undefined
@@ -699,6 +714,45 @@ function DayAccordion({
               onChange={(e) => onUpdate({ successMessage: e.target.value })}
               className="w-full rounded-xl border border-[var(--color-input)] bg-[var(--color-input)] px-3 py-2.5 text-sm text-[var(--color-foreground)] resize-none focus:outline-none focus:border-[var(--color-primary)] transition-colors leading-relaxed"
             />
+          </div>
+
+          {/* Tentativas de resposta */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-[var(--color-foreground)] uppercase tracking-widest">
+                Tentativas de resposta
+              </label>
+              <span className="text-[11px] text-[var(--color-muted-foreground)]">
+                {attempts.length} tentativa{attempts.length === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {attempts.length === 0 ? (
+              <p className="text-sm text-[var(--color-muted-foreground)]">
+                Ainda não houve tentativas registradas para este dia.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {attempts.map((attempt, index) => (
+                  <div
+                    key={`${attempt.submittedAt}-${index}`}
+                    className={`rounded-xl border px-3 py-2.5 ${attempt.isCorrect
+                      ? 'border-[var(--color-success)]/30 bg-[var(--color-success-bg)]/50'
+                      : 'border-[var(--color-destructive)]/20 bg-red-50/70'}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[11px] font-semibold uppercase tracking-widest ${attempt.isCorrect ? 'text-[var(--color-success)]' : 'text-[var(--color-destructive)]'}`}>
+                        {attempt.isCorrect ? 'Acertou' : 'Errou'}
+                      </span>
+                      <span className="text-[11px] text-[var(--color-muted-foreground)]">
+                        {formatAttemptTime(attempt.submittedAt)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm font-medium text-[var(--color-foreground)]">“{attempt.answer}”</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Audio */}

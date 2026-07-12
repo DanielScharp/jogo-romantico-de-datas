@@ -1,10 +1,17 @@
 import { type AdminConfig } from './adminConfig'
 
+export interface AnswerAttempt {
+  answer: string
+  isCorrect: boolean
+  submittedAt: string
+}
+
 export interface GameProgress {
   completedDays: number[]
   unlockedLetters: Record<number, string>
   submittedAnswers: Record<number, string>
   attachedImages: Record<number, string>
+  answerAttempts: Record<number, AnswerAttempt[]>
   finalPhraseCompleted: boolean
 }
 
@@ -13,12 +20,37 @@ export const defaultProgress: GameProgress = {
   unlockedLetters: {},
   submittedAnswers: {},
   attachedImages: {},
+  answerAttempts: {},
   finalPhraseCompleted: false,
 }
 
 interface GameStoreResponse {
   config: AdminConfig | null
   progress: Partial<GameProgress> | null
+}
+
+function normalizeAttempts(attempts?: Partial<GameProgress>['answerAttempts']): Record<number, AnswerAttempt[]> {
+  if (!attempts || typeof attempts !== 'object' || Array.isArray(attempts)) {
+    return {}
+  }
+
+  return Object.entries(attempts).reduce<Record<number, AnswerAttempt[]>>((acc, [day, value]) => {
+    const dayNumber = Number(day)
+    if (Number.isNaN(dayNumber) || !Array.isArray(value)) return acc
+
+    const safeAttempts = value.filter((attempt): attempt is AnswerAttempt =>
+      Boolean(attempt) &&
+      typeof attempt.answer === 'string' &&
+      typeof attempt.isCorrect === 'boolean' &&
+      typeof attempt.submittedAt === 'string'
+    )
+
+    if (safeAttempts.length > 0) {
+      acc[dayNumber] = safeAttempts
+    }
+
+    return acc
+  }, {})
 }
 
 function normalizeProgress(progress?: Partial<GameProgress> | null): GameProgress {
@@ -33,6 +65,7 @@ function normalizeProgress(progress?: Partial<GameProgress> | null): GameProgres
     attachedImages: progress?.attachedImages && typeof progress.attachedImages === 'object'
       ? progress.attachedImages
       : defaultProgress.attachedImages,
+    answerAttempts: normalizeAttempts(progress?.answerAttempts),
     finalPhraseCompleted: typeof progress?.finalPhraseCompleted === 'boolean'
       ? progress.finalPhraseCompleted
       : defaultProgress.finalPhraseCompleted,
